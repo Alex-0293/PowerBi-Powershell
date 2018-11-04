@@ -1,14 +1,37 @@
 Clear-Host
-$DataPath = "C:\Users\alex\Documents\VISUAL STUDIO CODE\DATA"
+$DataPath    = "C:\Users\alex\Documents\VISUAL STUDIO CODE\DATA"
+$Description = "LogData"
+
+
+$OSVer = [environment]::OSVersion.VersionString
+
+# Get events id depends on os version
+switch ($OSVer) {
+    "Microsoft Windows NT 6.1.7601 Service Pack 1"  # Win7
+    {
+        $ShutdownId   = 1074
+        $UpdatesId    = @(19,20,21,22,23,24)
+    }
+    "Microsoft Windows NT 10.0.14393.0"             # Win2016
+    {
+        $ShutdownId   = 1074
+        $UpdatesId    = @(19,26,41,25)
+    }
+    
+    Default 
+    {}
+}
 
 $LogName      = "System"
-$EventId      = 1074
-$FilterXPath  = "*[System[EventID=$EventId]]"
+
+$Ids          = $UpdatesId + $ShutdownId
+$EventIds     = ($Ids  |ForEach-Object{"EventID=$_"}) -join " or "
+$FilterXPath  = "*[System[$EventIds]]"
 $Days         = -100
 $Start        = (get-date).adddays($Days)
 $Events       = Get-WinEvent  -LogName $LogName -FilterXPath $FilterXPath | Where-Object {($_.timecreated -ge $Start)}
 
-$CSVpath      = "$DataPath\$EventID\"
+$CSVpath      = "$DataPath\$Description\"
 if (!(test-path -path $CSVpath)) {new-item -path $CSVpath -itemtype directory}
 
-$Events  | Export-Csv -Encoding Unicode -Path "$DataPath\$EventID\$env:COMPUTERNAME-EventID-$EventId.csv" -NoTypeInformation
+$Events  | Export-Csv -Encoding Unicode -Path "$DataPath\$Description\$env:COMPUTERNAME-$Description.csv" -NoTypeInformation
